@@ -30,6 +30,7 @@ from time import strftime, localtime
 import jmespath
 from io import BytesIO
 import base64
+from elliptic import AML
 
 @magics_class
 class Elliptic(Integration):
@@ -57,7 +58,6 @@ class Elliptic(Integration):
     Key:Value pairs here for APIs represent the type? 
     """
 
-    base_url = "<base_url_here>"
 
     """
     Syntax is 
@@ -78,7 +78,46 @@ class Elliptic(Integration):
         }
     """
 
-    apis = {}
+    apis = {
+        'wallet':{
+            'batch_path':'/v2/wallet',
+            'path':'/v2/wallet/synchronous',
+            'method':'POST',
+            'payload':{
+                'subject':{
+                'type':'address',
+                'asset':'holistic',
+                'blockchain':'holistic',
+                'hash':'<PLACEHOLDER>'
+            },
+            'type':'wallet_exposure'
+            }
+        },
+        'transaction':{
+            'batch_path':'/v2/analyses',
+            'path':'/v2/analyses/synchronous',
+            'method':'POST',
+            'switches':['--destination','--source'],
+            'payload':{
+               'subject':{
+                'type':'transaction',
+                'output_type':'address',
+                'asset':'holistic',
+                'blockchain':'holistic',
+                'hash':'<PLACEHOLDER>',
+                'output_type':'address'
+            },
+            'type':'<DEST_OR_SOURCE>',#destination_of_funds/source_of_funds
+            'customer_reference':'<REFERENCE>' 
+            }
+        }
+        'analysis':{
+            'batch_path':'/v2/analyses?page=1&per_page=500&subject_type=',
+            'path':'/v2/analyses/,
+            'method':'GET',
+            'switches':['--transaction', '--wallet'],
+        }
+    }
 
 
     # Class Init function - Obtain a reference to the get_ipython()
@@ -132,15 +171,14 @@ class Elliptic(Integration):
             else:
                 myproxies = None
 
+            print(inst['enc_pass'])
+
             if inst['enc_pass'] is not None:
                 mypass = self.ret_dec_pass(inst['enc_pass'])
             else:
                 mypass=None
 
-            #TODO
-            #we also need  to figure out how to do this with the secret
-            temp = AML(KEY=mypass, secret=mypass)
-            inst['session']=temp.client
+            inst['session']=AML(KEY=mypass, secret=mypass).client
             inst['session'].proxies=myproxies
 
             ssl_verify = self.opts['elliptic_verify_ssl'][0]
@@ -161,14 +199,17 @@ class Elliptic(Integration):
 
     def parse_query(self, query):
         q_items = query.split("\n")
-        end_point = q_items[0].strip()
-        if len(q_items) > 1:
-            end_point_vars = q_items[1].strip()
-        elif len(q_items) > 2:
-            end_point_vars = list(map(lambda variable : variable.strip(),q_items))
+        command = q_itmes[0].strip().split(" ")
+        command = list(set(list(filter(None,command))))
+        end_point_switches = []
+        end_point = command[0].lower()
+        if len(command) > 1:
+            end_point_switches = command[1:]
+        if len(q_items[1:]) >=1:
+            end_point_vars = list(set(list(filter(None,list(map(lambda variable : variable.strip(), q_items[1:]))))))
         else:
             end_point_vars = None
-        return end_point, end_point_vars
+        return end_point, end_point_vars, end_point_switches
 
 
     def validateQuery(self, query, instance):
@@ -183,7 +224,7 @@ class Elliptic(Integration):
         # Basically, we print a warning but don't change the bRun variable and the bReRun doesn't matter
 
         inst = self.instances[instance]
-        ep, ep_vars = self.parse_query(query)
+        ep, ep_vars, eps = self.parse_query(query)
 
         if ep not in self.apis.keys():
             print(f"Endpoint: {ep} not in available APIs: {self.apis.keys()}")
@@ -191,76 +232,75 @@ class Elliptic(Integration):
             if bReRun:
                 print("Submitting due to rerun")
                 bRun = True
+        
         return bRun
 
-    def _apiFileDownload(self, response, uuid):
-        if self.debug:
-            print('_apiDOMDownload')
-            print(response)
-            print(uuid)
-        status = -1
-        if os.access('.', os.W_OK):
-            f = open(f"dom_{uuid}.txt","wb")
-            try:
-                f.write(response.content)
-            except Exception as e:
-                print(f"An error has occured:\n{str(e)}")
-                print(status=-2)
-            finally:
-                f.flush()
-                f.close()
-                status = 0
-        else:
-            print("Please check that you are in a writeable directory before making this request.") 
-        return status 
-
-    def _apiDisplayScreenshot(self, response):
-        status = 0
-        if self.debug:
-            print('_apiDisplayScreenshot')
-            print(f"Lenght of content to write: {str(len(response.content))}")
-            print("Response content first 100 characters")
-            print(f"Print {response.content[0:100]}")
-        b64_img = base64.b64encode(response.content).decode()
-        try:
-            output = f"""
-                <img
-                    src="data:image/png;base64,{b64_img}"
-                />
-            """
-            display(HTML(output))
-        except Exception as e:
-            print(f"An error with PIL occured: {str(e)}")
-            status = -1
-        return status
-
-    def _apiResultParser(self, scan_result, parsers):
-        if self.debug:
-            print('_apiResultParser')
-            print(type(scan_result))
-            print(parsers)
-        parsed = {}
-        for expression in parsers:
-            parsed.update({expression[0]:[jmespath.search(expression[1],scan_result.json())]})
-        return parsed
 
     def customQuery(self, query, instance, reconnect=True):
-        
-        ep, ep_data = self.parse_query(query)
+        ep, ep_data,eps = self.parse_query(query)
         ep_api = self.apis.get(ep, None)
-
         if self.debug:
             print(f"Query: {query}")
             print(f"Endpoint: {ep}")
             print(f"Endpoint Data: {ep_data}")
             print(f"Endpoint API Transform: {ep_api}")
-            print("Session headers")
-            print(self.instances[instance]['session'].headers)
         mydf = None
         status = ""
         str_err = ""
-        ##TODO
+        batch=False
 
+        try:
+            if len(ep_data)>1 or (ep=='analysis' and len(ep_data<1)): 
+                batch=True
+            if self.apis[ep]['method'] == 'POST':
+                post_body = self.create_post_body(self.apis[ep]['payload'], ep_data, batch=batch)
+            else:
+                post_body = None
+
+            if batch:
+                url_path = self.apis[ep]['batch_url']
+            else:
+                url_path = self.apis[ep]['path'] + ep_data.strip()
+
+            response = make_request(instance, self.apis[ep]['method'], url_path, data=post_body)
+            if response.status_code==200:
+                if ep='analysis' and batch:
+                    results = []
+                    results = results + response.json().get('items')
+                    while response.json().get('page')<response.json().get('pages'):
+                        response = self.make_request(instance, self.apis[ep]['method'], url_path, data=post_body)
+                        if response.status_code==200:
+                            results = results+response.json().get('items')
+                    mydf = pd.DataFrame(results)
+                else:
+                    mydf = pd.DataFrame(response.json())
+            else:
+                str_err = "Error -"
+
+        except Exception as e:
+            print(f"Error - {str(e)}")
+            mydf = None
+            str_err = "Error, {str(e)}"
+        return mydf, str_err
+
+    def create_post_body(self, payload, ep_data, batch=False):
+        payloads = None
+        if batch:
+            payloads = []
+            for data in ep_data:
+                payloads = payloads+payload['subject']['hash'].update=data
+        else:
+            payloads = payload['subject']['hash'].update=ep_data
+        return payloads
+
+    def make_request(self, instance, method, path, data,verify=False):
+        response = self.instances[instance]['session'].request(
+            'method',
+            path,
+            json=data,
+            verify=verify
+        )
+        return response
 
     def parse_help_text(self):
 

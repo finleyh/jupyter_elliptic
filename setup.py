@@ -19,7 +19,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 
 # Get the current package version.
 version_ns = {}
-integration_str = "urlscan" # This could change to hive, drill, elastic etc.
+integration_str = "elliptic" # This could change to hive, drill, elastic etc.
 
 with open(pjoin(here, integration_str + '_core', '_version.py')) as f:
     exec(f.read(), {}, version_ns)
@@ -41,7 +41,7 @@ setup_args = dict(
     packages=[integration_str + '_core'],
     version=version_ns['__version__'],
     description="""An Interface Jupyter Notebooks.""",
-    long_description="A magic function for working with URLScan.io over Python3 based Jupyter Notebooks",
+    long_description="A magic function for working with Elliptic over Python3 based Jupyter Notebooks",
     author="Finley Hammond",
     author_email="yea right dude",
     url="https://github.com/finleyh/jupyter_" + integration_str,
