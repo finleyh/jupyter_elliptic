@@ -178,7 +178,7 @@ class Elliptic(Integration):
             else:
                 mypass=None
 
-            inst['session']=AML(KEY=mypass, secret=mypass).client
+            inst['session']=AML(KEY=inst['user'], secret=mypass).client
             inst['session'].proxies=myproxies
 
             ssl_verify = self.opts['elliptic_verify_ssl'][0]
