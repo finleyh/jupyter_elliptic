@@ -268,15 +268,16 @@ class Elliptic(Integration):
                 url_path = self.apis[ep]['path']
             if self.apis[ep]['method'] == 'POST':
                 post_body = self.create_post_body(ep, eps, self.apis[ep]['payload'], ep_data, batch=batch)
+                if not post_body:
+                    str_err="Error"
+                    return mydf,str_err
             else:
                 post_body = None
                 if self.apis[ep]['method']=='GET' and not batch:
                     url_path = url_path.replace('<~~replace~~>',ep_data[0])
                 else: #this is a get/batch case, will handle URL and requests in below if/else block
                     get_batch = True
-            if not post_body:
-                str_err="Error"
-                return mydf,str_err
+            
             if not get_batch:
                 response = self.make_request(instance, self.apis[ep]['method'], url_path, data=post_body)
                 if response.status_code==200:
