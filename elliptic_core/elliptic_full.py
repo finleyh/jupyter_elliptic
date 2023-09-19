@@ -292,7 +292,7 @@ class Elliptic(Integration):
             for data in ep_data:
                 payloads = payloads+payload['subject'].update({'hash':data})
         else:
-            payloads = payload['subject']['hash'].update=ep_data
+            payloads = payload['subject']['hash'].update({'hash':ep_data})
         return payloads
 
     def make_request(self, instance, method, path, data,verify=False):
