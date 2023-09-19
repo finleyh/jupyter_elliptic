@@ -111,12 +111,6 @@ class Elliptic(Integration):
             'type':'<DEST_OR_SOURCE>',#destination_of_funds/source_of_funds
             'customer_reference':'<REFERENCE>' 
             }
-        },
-        'analysis':{
-            'batch_path':'/v2/analyses?page=1&per_page=500&subject_type=',
-            'path':'/v2/analyses/',
-            'method':'GET',
-            'switches':['--transaction', '--wallet'],
         }
     }
 
@@ -262,7 +256,7 @@ class Elliptic(Integration):
             if batch:
                 url_path = self.apis[ep]['batch_url']
             else:
-                url_path = self.apis[ep]['path'] + ep_data[0].strip()
+                url_path = self.apis[ep]['path']
 
             response = self.make_request(instance, self.apis[ep]['method'], url_path, data=post_body)
             if response.status_code==200:
