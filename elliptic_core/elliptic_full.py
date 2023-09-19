@@ -199,7 +199,7 @@ class Elliptic(Integration):
 
     def parse_query(self, query):
         q_items = query.split("\n")
-        command = q_itmes[0].strip().split(" ")
+        command = q_items[0].strip().split(" ")
         command = list(set(list(filter(None,command))))
         end_point_switches = []
         end_point = command[0].lower()
