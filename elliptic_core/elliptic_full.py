@@ -242,7 +242,7 @@ class Elliptic(Integration):
         print('todo')
         return None
 
-
+    
     def customQuery(self, query, instance, reconnect=True):
         ep, ep_data,eps = self.parse_query(query)
         ep_api = self.apis.get(ep, None)
@@ -259,17 +259,15 @@ class Elliptic(Integration):
 
         try:
             set_trace()
-            if len(ep_data)>1 or (ep=='analysis' and len(ep_data<1)): 
+            if (len(ep_data)>1 and ep!='transaction') or (ep=='analysis' and len(ep_data<1)): 
                 batch=True
 
             if batch:
                 url_path = self.apis[ep]['batch_path']
             else:
                 url_path = self.apis[ep]['path']
-
             if self.apis[ep]['method'] == 'POST':
-                post_body = self.create_post_body(ep, eps, self.apis[ep]['payload'], ep_data, batch=batch)    
-
+                post_body = self.create_post_body(ep, eps, self.apis[ep]['payload'], ep_data, batch=batch)
             else:
                 post_body = None
                 if self.apis[ep]['method']=='GET' and not batch:
@@ -329,18 +327,26 @@ class Elliptic(Integration):
                 return mydf, str_err
             if eps[0] in self.apis[ep]['switches']:
                 if eps[0]=='--source':
-                    payload.update({'update':'source_of_funds'})
+                    payload.update({'type':'source_of_funds'})
                 else:
-                    payload.update({'update':'destination_of_funds'})
+                    payload.update({'type':'destination_of_funds'})
             else:
                 print(f'This switch {eps[0]} was not found in the support switches for function {ep}')
                 print(f"Supported switches are {str(self.apis[ep]['switches'])}")
-            wallet_list = list(set(filter(None,ep_data[1].split(','))))
-            transaction_list = list(set(filter(None,ep_data[2].split(','))))
-            note_list = list(set(filter(None,ep_data[3].split(','))))
             
-            if len(wallet_list)!=len(transaction_list):
-                print("You provided more wallet ids than transactions. See help for how to use this magic.")
+            wallet_list=[]
+            transaction_list=[]
+            note_list=[]
+            for line in ep_data:
+                if 'wallet=' in line:
+                    wallet_list = wallet_list+list(set(filter(None,line.replace('wallet=','').split(','))))
+                elif 'transaction=' in line:
+                    transaction_list = transaction_list +list(set(filter(None,line.replace('transaction=','').split(','))))
+                elif 'note=' in line:
+                    note_list = note_list+list(set(filter(None,line.replace('note=','').split(','))))
+            
+            if len(wallet_list)!=len(transaction_list)!=len(note_list):
+                print("You provided an unequal amount of notes, wallets, or transactions. See help for how to use this magic.")
             else:
                 for wid, tx, note in zip(wallet_list, transaction_list, note_list):
                     payload['subject'].update({'hash':tx})
