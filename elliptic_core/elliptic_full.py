@@ -54,6 +54,7 @@ class Elliptic(Integration):
     myopts['elliptic_conn_default'] = ["default", "Default instance to connect with"]
     myopts['elliptic_verify_ssl'] = [True, "Verify integrity of SSL"]
     myopts['elliptic_rate_limit'] = [True, "Limit rates based on Elliptic user configuration"]
+    myopts['elliptic_batch_wait'] = [3, "Time to wait in seconds between requests to API endpoint."]
 
     """
     Key:Value pairs here for APIs represent the type? 
@@ -135,6 +136,7 @@ class Elliptic(Integration):
         'wallet_analysis':{
             'method':'GET',
             'path':'/v2/wallet/<~~replace~~>',
+            'batch_path':'/v2/wallet',
             'switches':[],
             'payload':None
         }
@@ -269,6 +271,7 @@ class Elliptic(Integration):
         status = ""
         str_err = ""
         batch=False
+        get_batch=False
 
         try:
             set_trace()
@@ -284,26 +287,41 @@ class Elliptic(Integration):
                 post_body = self.create_post_body(self.apis[ep]['payload'], ep_data, batch=batch)                
             else:
                 post_body = None
-                if self.apis[ep]['method']=='GET':
+                if self.apis[ep]['method']=='GET' and not batch:
                     url_path = url_path.replace('<~~replace~~>',ep_data[0])
+                else: #this is a get/batch case
+                    get_batch = True
 
-            response = self.make_request(instance, self.apis[ep]['method'], url_path, data=post_body)
-            if response.status_code==200:
-                if ep=='analysis' and batch:
-                    results = []
-                    results = results + response.json().get('items')
-                    while response.json().get('page')<response.json().get('pages'):
-                        response = self.make_request(instance, self.apis[ep]['method'], url_path, data=post_body)
-                        if response.status_code==200:
-                            results = results+response.json().get('items')
-                    mydf = pd.DataFrame(results)
-                elif self.apis[ep]['method']=='POST' and batch:
-                    mydf=pd.DataFrame(response.json())
+            if not get_batch:
+                response = self.make_request(instance, self.apis[ep]['method'], url_path, data=post_body)
+                if response.status_code==200:
+                    if ep=='analysis' and batch:
+                        results = []
+                        results = results + response.json().get('items')
+                        while response.json().get('page')<response.json().get('pages'):
+                            response = self.make_request(instance, self.apis[ep]['method'], url_path, data=post_body)
+                            if response.status_code==200:
+                                results = results+response.json().get('items')
+                        mydf = pd.DataFrame(results)
+                    elif self.apis[ep]['method']=='POST' and batch:
+                        mydf=pd.DataFrame(response.json())
+                    else:
+                        mydf = pd.DataFrame([response.json()])
+                    str_err = "Success - Results"
                 else:
-                    mydf = pd.DataFrame([response.json()])
+                    str_err = f"Error - {str(response.status_code)}"
+            else: #crappy get_batch, because the API doesnt let  you batch request on this endpoint, dumb
+                results = []
+                for data in ep_data:
+                    url_path = url_path.replace('<~~replace~~>',data)
+                    response = self.make_request(instance, self.apis[ep]['method'],url_path,data=post_body)
+                    time.sleep(self.opts['elliptic_batch_wait'])
+                    if response.status_code==200:
+                        results = results+response.json().get('items')
+                    else:
+                        print(f"Error - {str(response.status_code)}")
+                mydf = pd.DataFrame(results)
                 str_err = "Success - Results"
-            else:
-                str_err = f"Error - {str(response.status_code)}"
 
         except Exception as e:
             print(f"Error - {str(e)}")
