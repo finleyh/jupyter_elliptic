@@ -110,10 +110,10 @@ class Elliptic(Integration):
             'type':'<DEST_OR_SOURCE>',#destination_of_funds/source_of_funds
             'customer_reference':'<REFERENCE>' 
             }
-        }
+        },
         'analysis':{
             'batch_path':'/v2/analyses?page=1&per_page=500&subject_type=',
-            'path':'/v2/analyses/,
+            'path':'/v2/analyses/',
             'method':'GET',
             'switches':['--transaction', '--wallet'],
         }
@@ -262,9 +262,9 @@ class Elliptic(Integration):
             else:
                 url_path = self.apis[ep]['path'] + ep_data.strip()
 
-            response = make_request(instance, self.apis[ep]['method'], url_path, data=post_body)
+            response = self.make_request(instance, self.apis[ep]['method'], url_path, data=post_body)
             if response.status_code==200:
-                if ep='analysis' and batch:
+                if ep=='analysis' and batch:
                     results = []
                     results = results + response.json().get('items')
                     while response.json().get('page')<response.json().get('pages'):
@@ -288,7 +288,7 @@ class Elliptic(Integration):
         if batch:
             payloads = []
             for data in ep_data:
-                payloads = payloads+payload['subject']['hash'].update=data
+                payloads = payloads+payload['subject'].update({'hash':data})
         else:
             payloads = payload['subject']['hash'].update=ep_data
         return payloads
