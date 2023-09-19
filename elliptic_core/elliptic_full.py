@@ -315,7 +315,7 @@ class Elliptic(Integration):
                 for data in ep_data:
                     url_path = url_path.replace('<~~replace~~>',data)
                     response = self.make_request(instance, self.apis[ep]['method'],url_path,data=post_body)
-                    time.sleep(self.opts['elliptic_batch_wait'])
+                    time.sleep(self.opts['elliptic_batch_wait'][0])
                     if response.status_code==200:
                         results = results+response.json().get('items')
                     else:
