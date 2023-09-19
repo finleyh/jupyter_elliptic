@@ -31,6 +31,7 @@ import jmespath
 from io import BytesIO
 import base64
 from elliptic import AML
+from IPython.core.debugger import set_trace
 
 @magics_class
 class Elliptic(Integration):
@@ -250,6 +251,7 @@ class Elliptic(Integration):
         batch=False
 
         try:
+            set_trace()
             if len(ep_data)>1 or (ep=='analysis' and len(ep_data<1)): 
                 batch=True
             if self.apis[ep]['method'] == 'POST':
