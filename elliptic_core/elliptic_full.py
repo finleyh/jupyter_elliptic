@@ -286,7 +286,7 @@ class Elliptic(Integration):
             for data in ep_data:
                 payloads.append(payload['subject'].update({'hash':data}))
         else:
-            payload['subject'].update({'hash':ep_data})
+            payload['subject'].update({'hash':ep_data[0]})
             payloads = payload
         return payloads
 
