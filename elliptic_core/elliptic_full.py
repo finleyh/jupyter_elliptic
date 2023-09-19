@@ -268,7 +268,7 @@ class Elliptic(Integration):
         get_batch=False
 
         try:
-            set_trace()
+            #set_trace()
             if len(ep_data)>1 and ep!='transaction': 
                 batch=True
 
