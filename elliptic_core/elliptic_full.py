@@ -99,38 +99,18 @@ class Elliptic(Integration):
             'batch_path':'/v2/analyses',
             'path':'/v2/analyses/synchronous',
             'method':'POST',
-            'switches':[
-                {
-                    'required':True,
-                    'name':'source_dest',
-                    'mutex':True,
-                    'values':['--source','--destination']
-
-                },
-                {
-                    'required':True,
-                    'name':'wallet_hash',
-                    'mutex':None,
-                    'values':['--wallet_hash=']
-                },
-                {
-                    'name':'customer_reference',
-                    'required':True,
-                    'values':['--note=','--ref=','--customer_reference=','--customerreference='],
-                    'mutex':True
-                }
-            ],
+            'switches':['--source','--destination'],
             'payload':{
                'subject':{
-                'type':'transaction',
-                'output_type':'address',
-                'asset':'holistic',
-                'blockchain':'holistic',
-                'hash':'<PLACEHOLDER>',
-                'output_type':'address'
-            },
-            'type':'<DEST_OR_SOURCE>',#destination_of_funds/source_of_funds
-            'customer_reference':'<REFERENCE>' 
+                    'type':'transaction',
+                    'output_type':'address',
+                    'asset':'holistic',
+                    'blockchain':'holistic',
+                    'hash':'<PLACEHOLDER>',
+                    'output_type':'address'
+                },
+                'type':'<DEST_OR_SOURCE>',#destination_of_funds/source_of_funds
+                'customer_reference':'<REFERENCE>' 
             }
         },
         'wallet_analysis':{
@@ -258,6 +238,10 @@ class Elliptic(Integration):
         
         return bRun
 
+    def validate_transaction(self, instance, ep, eps, ep_data):
+        print('todo')
+        return None
+
 
     def customQuery(self, query, instance, reconnect=True):
         ep, ep_data,eps = self.parse_query(query)
@@ -274,6 +258,7 @@ class Elliptic(Integration):
         get_batch=False
 
         try:
+            set_trace()
             if len(ep_data)>1 or (ep=='analysis' and len(ep_data<1)): 
                 batch=True
 
@@ -283,14 +268,17 @@ class Elliptic(Integration):
                 url_path = self.apis[ep]['path']
 
             if self.apis[ep]['method'] == 'POST':
-                post_body = self.create_post_body(self.apis[ep]['payload'], ep_data, batch=batch)                
+                post_body = self.create_post_body(ep, eps, self.apis[ep]['payload'], ep_data, batch=batch)    
+
             else:
                 post_body = None
                 if self.apis[ep]['method']=='GET' and not batch:
                     url_path = url_path.replace('<~~replace~~>',ep_data[0])
                 else: #this is a get/batch case, will handle URL and requests in below if/else block
                     get_batch = True
-
+            if not post_body:
+                str_err="Error"
+                return mydf,str_err
             if not get_batch:
                 response = self.make_request(instance, self.apis[ep]['method'], url_path, data=post_body)
                 if response.status_code==200:
@@ -330,17 +318,44 @@ class Elliptic(Integration):
             str_err = "Error, {str(e)}"
         return mydf, str_err
 
-    def create_post_body(self, payload, ep_data, batch=False):
+    def create_post_body(self, ep, eps, payload, ep_data, batch=False):
         payloads = None
-        if batch:
-            payloads = []
-            for data in ep_data:
-                payload['subject'].update({'hash':data})
-                payloads.append(json.loads(json.dumps(payload)))
-
+        if ep=='transaction':
+            if len(eps)>1:
+                mydf=None
+                print("You passed too many switches, only supported switches are:")
+                print(self.apis[ep]['switches'])
+                str_err = "Error - too many switches passed"
+                return mydf, str_err
+            if eps[0] in self.apis[ep]['switches']:
+                if eps[0]=='--source':
+                    payload.update({'update':'source_of_funds'})
+                else:
+                    payload.update({'update':'destination_of_funds'})
+            else:
+                print(f'This switch {eps[0]} was not found in the support switches for function {ep}')
+                print(f"Supported switches are {str(self.apis[ep]['switches'])}")
+            wallet_list = list(set(filter(None,ep_data[1].split(','))))
+            transaction_list = list(set(filter(None,ep_data[2].split(','))))
+            note_list = list(set(filter(None,ep_data[3].split(','))))
+            
+            if len(wallet_list)!=len(transaction_list):
+                print("You provided more wallet ids than transactions. See help for how to use this magic.")
+            else:
+                for wid, tx in zip(wallet_list, transaction_list):
+                    payload['subject'].update({'hash':tx})
+                    payload['subject'].update({'output_address':wid})
+                    temp = payload.copy()
+                    payloads.append(temp)
         else:
-            payload['subject'].update({'hash':ep_data[0]})
-            payloads = payload
+            if batch:
+                payloads = []
+                for data in ep_data:
+                    payload['subject'].update({'hash':data})
+                    payloads.append(json.loads(json.dumps(payload)))
+            else:
+                payload['subject'].update({'hash':ep_data[0]})
+                payloads = payload
         return payloads
 
     def make_request(self, instance, method, path, data,verify=True):
