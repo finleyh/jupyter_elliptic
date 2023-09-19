@@ -317,7 +317,9 @@ class Elliptic(Integration):
                     response = self.make_request(instance, self.apis[ep]['method'],url_path,data=post_body)
                     time.sleep(self.opts['elliptic_batch_wait'][0])
                     if response.status_code==200:
-                        results = results+response.json().get('items')
+                        temp = response.json().copy()
+                        temp.update({'sample':data})
+                        results.append(temp)
                     else:
                         print(f"Error - {str(response.status_code)}")
                 mydf = pd.DataFrame(results)
