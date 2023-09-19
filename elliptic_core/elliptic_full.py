@@ -291,7 +291,7 @@ class Elliptic(Integration):
 
     def make_request(self, instance, method, path, data,verify=False):
         response = self.instances[instance]['session'].request(
-            'method',
+            method,
             path,
             json=data,
             verify=verify
