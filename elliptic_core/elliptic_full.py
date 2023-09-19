@@ -317,7 +317,8 @@ class Elliptic(Integration):
             payloads = []
             for data in ep_data:
                 payload['subject'].update({'hash':data})
-                payloads.append(payload.copy())
+                payloads.append(json.loads(json.dumps(payload)))
+
         else:
             payload['subject'].update({'hash':ep_data[0]})
             payloads = payload
