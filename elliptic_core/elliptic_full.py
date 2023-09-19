@@ -254,15 +254,18 @@ class Elliptic(Integration):
             set_trace()
             if len(ep_data)>1 or (ep=='analysis' and len(ep_data<1)): 
                 batch=True
-            if self.apis[ep]['method'] == 'POST':
-                post_body = self.create_post_body(self.apis[ep]['payload'], ep_data, batch=batch)
-            else:
-                post_body = None
 
             if batch:
                 url_path = self.apis[ep]['batch_url']
             else:
                 url_path = self.apis[ep]['path']
+
+            if self.apis[ep]['method'] == 'POST':
+                post_body = self.create_post_body(self.apis[ep]['payload'], ep_data, batch=batch)                
+            else:
+                post_body = None
+                if self.apis[ep]['method']=='GET':
+                    url_path = url_path.replace('<~~replace~~>',ep_data[0])
 
             response = self.make_request(instance, self.apis[ep]['method'], url_path, data=post_body)
             if response.status_code==200:
@@ -274,13 +277,11 @@ class Elliptic(Integration):
                         if response.status_code==200:
                             results = results+response.json().get('items')
                     mydf = pd.DataFrame(results)
-                elif ep=='wallet':
-                    mydf = pd.DataFrame([response.json()])
                 else:
-                    mydf = pd.DataFrame(response.json())
+                    mydf = pd.DataFrame([response.json()])
                 str_err = "Success - Results"
             else:
-                str_err = "Error -"
+                str_err = f"Error - {str(response.status_code)}"
 
         except Exception as e:
             print(f"Error - {str(e)}")
