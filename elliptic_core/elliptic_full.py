@@ -98,7 +98,27 @@ class Elliptic(Integration):
             'batch_path':'/v2/analyses',
             'path':'/v2/analyses/synchronous',
             'method':'POST',
-            'switches':['--destination','--source'],
+            'switches':[
+                {
+                    'required':True,
+                    'name':'source_dest',
+                    'mutex':True,
+                    'values':['--source','--destination']
+
+                },
+                {
+                    'required':True,
+                    'name':'wallet_hash',
+                    'mutex':None,
+                    'values':['--wallet_hash=']
+                },
+                {
+                    'name':'customer_reference',
+                    'required':True,
+                    'values':['--note=','--ref=','--customer_reference=','--customerreference='],
+                    'mutex':True
+                }
+            ],
             'payload':{
                'subject':{
                 'type':'transaction',
@@ -256,7 +276,7 @@ class Elliptic(Integration):
                 batch=True
 
             if batch:
-                url_path = self.apis[ep]['batch_url']
+                url_path = self.apis[ep]['batch_path']
             else:
                 url_path = self.apis[ep]['path']
 
