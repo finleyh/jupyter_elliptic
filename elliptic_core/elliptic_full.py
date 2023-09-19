@@ -289,7 +289,7 @@ class Elliptic(Integration):
                 post_body = None
                 if self.apis[ep]['method']=='GET' and not batch:
                     url_path = url_path.replace('<~~replace~~>',ep_data[0])
-                else: #this is a get/batch case
+                else: #this is a get/batch case, will handle URL and requests in below if/else block
                     get_batch = True
 
             if not get_batch:
