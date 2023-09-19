@@ -270,6 +270,8 @@ class Elliptic(Integration):
                     mydf = pd.DataFrame(results)
                 else:
                     mydf = pd.DataFrame(response.json())
+                if ep=='wallet':
+                    mydf = pd.DataFrame([response.json()])
             else:
                 str_err = "Error -"
 
