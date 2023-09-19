@@ -136,7 +136,7 @@ class Elliptic(Integration):
         'wallet_analysis':{
             'method':'GET',
             'path':'/v2/wallet/<~~replace~~>',
-            'batch_path':'/v2/wallet',
+            'batch_path':'/v2/wallet/wallet/<~~replace~~>',
             'switches':[],
             'payload':None
         }
