@@ -268,10 +268,11 @@ class Elliptic(Integration):
                         if response.status_code==200:
                             results = results+response.json().get('items')
                     mydf = pd.DataFrame(results)
+                elif ep=='wallet':
+                    mydf = pd.DataFrame([response.json()])
                 else:
                     mydf = pd.DataFrame(response.json())
-                if ep=='wallet':
-                    mydf = pd.DataFrame([response.json()])
+                str_err = "Success - Results"
             else:
                 str_err = "Error -"
 
