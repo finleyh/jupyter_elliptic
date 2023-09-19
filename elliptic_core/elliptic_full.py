@@ -202,16 +202,14 @@ class Elliptic(Integration):
 
     def parse_query(self, query):
         q_items = query.split("\n")
-        if self.debug:
-            print(q_items)
         command = q_items[0].strip().split(" ")
-        command = list(set(list(filter(None,command))))
+        command = list(filter(None,command))
         end_point_switches = []
         end_point = command[0].lower()
         if len(command) > 1:
             end_point_switches = command[1:]
         if len(q_items[1:]) >=1:
-            end_point_vars = list(set(list(filter(None,list(map(lambda variable : variable.strip(), q_items[1:]))))))
+            end_point_vars = list(filter(None,list(map(lambda variable : variable.strip(), q_items[1:]))))
         else:
             end_point_vars = None
         return end_point, end_point_vars, end_point_switches
@@ -290,7 +288,7 @@ class Elliptic(Integration):
                             if response.status_code==200:
                                 results = results+response.json().get('items')
                         mydf = pd.DataFrame(results)
-                    elif self.apis[ep]['method']=='POST' and batch:
+                    elif (self.apis[ep]['method']=='POST' and batch) or ep.lower()=='transaction':
                         mydf=pd.DataFrame(response.json())
                     else:
                         mydf = pd.DataFrame([response.json()])
