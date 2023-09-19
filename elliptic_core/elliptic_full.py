@@ -297,6 +297,8 @@ class Elliptic(Integration):
                         if response.status_code==200:
                             results = results+response.json().get('items')
                     mydf = pd.DataFrame(results)
+                elif self.apis[ep]['method']=='POST' and batch:
+                    mydf=pd.DataFrame(response.json())
                 else:
                     mydf = pd.DataFrame([response.json()])
                 str_err = "Success - Results"
