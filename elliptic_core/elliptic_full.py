@@ -97,7 +97,7 @@ class Elliptic(Integration):
         },
         'transaction':{
             'batch_path':'/v2/analyses',
-            'path':'/v2/analyses/synchronous',
+            'path':'/v2/analyses',
             'method':'POST',
             'switches':['--source','--destination'],
             'payload':{
