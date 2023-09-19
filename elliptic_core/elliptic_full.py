@@ -317,7 +317,7 @@ class Elliptic(Integration):
         return mydf, str_err
 
     def create_post_body(self, ep, eps, payload, ep_data, batch=False):
-        payloads = None
+        payloads = []
         if ep=='transaction':
             if len(eps)>1:
                 mydf=None
@@ -356,7 +356,6 @@ class Elliptic(Integration):
                     payloads.append(temp)
         else:
             if batch:
-                payloads = []
                 for data in ep_data:
                     payload['subject'].update({'hash':data})
                     payloads.append(json.loads(json.dumps(payload)))
