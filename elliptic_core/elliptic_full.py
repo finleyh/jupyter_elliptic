@@ -324,7 +324,7 @@ class Elliptic(Integration):
             payloads = payload
         return payloads
 
-    def make_request(self, instance, method, path, data,verify=False):
+    def make_request(self, instance, method, path, data,verify=True):
         response = self.instances[instance]['session'].request(
             method,
             path,
