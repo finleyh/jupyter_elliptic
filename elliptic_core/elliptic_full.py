@@ -122,8 +122,8 @@ class Elliptic(Integration):
         },
         'transaction_analysis':{
             'method':'GET',
-            'path':'/v2/wallet/<~~replace~~>',
-            'batch_path':'/v2/wallet/<~~replace~~>',
+            'path':'/v2/analyses/<~~replace~~>',
+            'batch_path':'/v2/analyses/<~~replace~~>',
             'switches':[],
             'payload':None
         }
