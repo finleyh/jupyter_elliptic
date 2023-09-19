@@ -342,9 +342,10 @@ class Elliptic(Integration):
             if len(wallet_list)!=len(transaction_list):
                 print("You provided more wallet ids than transactions. See help for how to use this magic.")
             else:
-                for wid, tx in zip(wallet_list, transaction_list):
+                for wid, tx, note in zip(wallet_list, transaction_list, note_list):
                     payload['subject'].update({'hash':tx})
                     payload['subject'].update({'output_address':wid})
+                    payload.update({'customer_reference':note})
                     temp = payload.copy()
                     payloads.append(temp)
         else:
