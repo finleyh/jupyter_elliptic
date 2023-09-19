@@ -111,6 +111,12 @@ class Elliptic(Integration):
             'type':'<DEST_OR_SOURCE>',#destination_of_funds/source_of_funds
             'customer_reference':'<REFERENCE>' 
             }
+        },
+        'wallet_analysiss':{
+            'method':'GET',
+            'path':'/v2/wallet/<~~replace~~>',
+            'switches':[],
+            'payload':None
         }
     }
 
