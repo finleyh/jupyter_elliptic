@@ -262,7 +262,7 @@ class Elliptic(Integration):
             if batch:
                 url_path = self.apis[ep]['batch_url']
             else:
-                url_path = self.apis[ep]['path'] + ep_data.strip()
+                url_path = self.apis[ep]['path'] + ep_data[0].strip()
 
             response = self.make_request(instance, self.apis[ep]['method'], url_path, data=post_body)
             if response.status_code==200:
