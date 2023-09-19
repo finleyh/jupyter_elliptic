@@ -340,8 +340,8 @@ class Elliptic(Integration):
             for line in ep_data:
                 if 'wallet=' in line:
                     wallet_list = wallet_list+list(set(filter(None,line.replace('wallet=','').split(','))))
-                elif 'transaction=' in line:
-                    transaction_list = transaction_list +list(set(filter(None,line.replace('transaction=','').split(','))))
+                elif 'txid=' in line:
+                    transaction_list = transaction_list +list(set(filter(None,line.replace('txid=','').split(','))))
                 elif 'note=' in line:
                     note_list = note_list+list(set(filter(None,line.replace('note=','').split(','))))
             
