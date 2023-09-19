@@ -119,6 +119,13 @@ class Elliptic(Integration):
             'batch_path':'/v2/wallet/<~~replace~~>',
             'switches':[],
             'payload':None
+        },
+        'transaction_analysis':{
+            'method':'GET',
+            'path':'/v2/wallet/<~~replace~~>',
+            'batch_path':'/v2/wallet/<~~replace~~>',
+            'switches':[],
+            'payload':None
         }
     }
 
@@ -152,6 +159,9 @@ class Elliptic(Integration):
 
         qexamples = []
         qexamples.append(["myinstance", "(command)\n(data)", "Command abstracts an endpoint and how the data is sent to it (if applicable)."])
+        qexamples.append(["","wallet_analysis\n2a8d1b70-27e2-41c9-8799-7848badd0379\n212c6a69-91d5-4a52-ae16-1b0154d1772c","Given the following Wallet Analysis IDs\nquery the Elliptic Endpoint to retrieve the analysis details."])
+        qexamples.append(["","wallet\nbc1pp2xds8sxc4gscuw5hmnwkulmrrl4waw2emfdfx79ct6zra2jkgvqfdjfdx\n1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa","This example submits a series of analysis requests for the following wallets.\nThe IDs returned by the API can be used to retrieve the results."])
+        qexamples.append(["","transaction --source\ntxid=97ddfbbae6be97fd6cdf3e7ca13232a3afff2353e29badfab7f73011edd4ced9\nwallet=Ler4HNAEfwYhBmGXcFP2Po1NpRUEiK8km2\nnote=example","Transaction is an odd fish, please reach out to Finley if you want to do this in batch."])
         out += self.retQueryHelp(qexamples)
         return out
 
@@ -259,7 +269,7 @@ class Elliptic(Integration):
 
         try:
             set_trace()
-            if (len(ep_data)>1 and ep!='transaction') or (ep=='analysis' and len(ep_data<1)): 
+            if len(ep_data)>1 and ep!='transaction': 
                 batch=True
 
             if batch:
