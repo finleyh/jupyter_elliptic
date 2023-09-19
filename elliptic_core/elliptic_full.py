@@ -315,11 +315,9 @@ class Elliptic(Integration):
         payloads = None
         if batch:
             payloads = []
-            TEMP = payload
             for data in ep_data:
                 payload['subject'].update({'hash':data})
                 payloads.append(payload)
-                payload = TEMP
         else:
             payload['subject'].update({'hash':ep_data[0]})
             payloads = payload
