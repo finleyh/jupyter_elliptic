@@ -112,7 +112,7 @@ class Elliptic(Integration):
             'customer_reference':'<REFERENCE>' 
             }
         },
-        'wallet_analysiss':{
+        'wallet_analysis':{
             'method':'GET',
             'path':'/v2/wallet/<~~replace~~>',
             'switches':[],
