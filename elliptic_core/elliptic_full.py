@@ -52,7 +52,7 @@ class Elliptic(Integration):
 
     myopts = {}
     myopts['elliptic_conn_default'] = ["default", "Default instance to connect with"]
-    myopts['elliptic_verify_ssl'] = [True, "Verify integrity of SSL"]
+    myopts['elliptic_verify_ssl'] = [False, "Verify integrity of SSL"]
     myopts['elliptic_rate_limit'] = [True, "Limit rates based on Elliptic user configuration"]
     myopts['elliptic_batch_wait'] = [3, "Time to wait in seconds between requests to API endpoint."]
 
@@ -180,7 +180,7 @@ class Elliptic(Integration):
             inst = self.instances[instance]
         if inst is not None:
             if inst['options'].get('useproxy', 0) == 1:
-                myproxies = self.get_proxy_str(instance)
+                myproxies = self.retProxy(instance)
             else:
                 myproxies = None
 
@@ -375,12 +375,11 @@ class Elliptic(Integration):
                 payloads = payload
         return payloads
 
-    def make_request(self, instance, method, path, data,verify=True):
+    def make_request(self, instance, method, path, data):
         response = self.instances[instance]['session'].request(
             method,
             path,
-            json=data,
-            verify=verify
+            json=data
         )
         return response
 
