@@ -70,10 +70,3 @@ class API(object):
         path = f'/v2/analyses/{data}'
         payload=None
         return self.__results(method, path, payload)
-
-    def find_vasp_by_name(self, data : str):
-        print("TODO")
-
-    def find_vasp_by_id(self, data : str):
-        print("TODO")
-  
