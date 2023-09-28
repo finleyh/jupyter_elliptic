@@ -25,6 +25,7 @@ class API(object):
     
 
     def submit_wallet(self, data : str , asset : str = 'holistic', blockchain : str = 'blockchain', batch : bool = False):
+        """{"switches":["-p"], "polling_endpoint":"get_wallet","polling_data":"id"}"""
         if not batch:
             path = '/v2/wallet/synchronous'
         else:
@@ -42,14 +43,19 @@ class API(object):
         return self.__results(method, path, payload)
 
 
-    def get_wallet(self, data : str):
+    def get_wallet(self, data : str, batch : bool = False):
+        """{"switches":[]}"""
         method = 'GET'
         path = f'/v2/wallet/{data}'
         payload = None
         return self.__results(method, path, payload)
 
-    def submit_transaction(self, data : str, type : str, customer_reference : str):
-        path  = '/v2/analyses'
+    def submit_transaction(self, data : str, type : str, customer_reference : str, batch : bool = False):
+        """{"switches":["-p"], "polling_endpoint":"get_transaction", "polling_data":"id"}"""
+        if not batch:
+            path  = '/v2/analyses/synchronous'
+        else:
+            path = '/v2/analyses'
         method = 'POST'
         payload = {
             'subject':{
@@ -65,8 +71,16 @@ class API(object):
         }
         return self.__results(method, path, payload)
 
-    def get_transaction(self, data : str):
+    def get_transaction(self, data : str, batch : bool = False):
+        """{"switches":[]}"""
         method = 'GET'
         path = f'/v2/analyses/{data}'
         payload=None
         return self.__results(method, path, payload)
+    
+    def get_redirect(self, url):
+        """{"switches":[]}"""
+        print(f'{self.get_redirect.__name__} called on: {url}')
+        method = 'GET'
+        payload = None
+        return self.__results(method, url, json=payload)
