@@ -134,10 +134,10 @@ class Elliptic(Integration):
                 mypass=None
 
             ssl_verify = self.opts['elliptic_verify_ssl'][0]
-            if isinstance(ssl_verify, str) and ssl_verify.strip().lower() in ['true', 'false']:
+            if isinstance(ssl_verify, str) and ssl_verify.strip().lower() in ['true', 'false','0','1']:
                 if ssl_verify.strip().lower() == 'true':
                     ssl_verify = True
-                else:
+                else: 
                     ssl_verify = False
             elif isinstance(ssl_verify, int) and ssl_verify in [0, 1]:
                 if ssl_verify == 1:
