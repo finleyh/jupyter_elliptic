@@ -13,7 +13,7 @@ import datetime
 from IPython.core.magic import (Magics, magics_class, line_magic, cell_magic, line_cell_magic)
 from IPython.core.display import HTML
 from io import StringIO
-from requests import Request, Session
+from requests import JSONDecodeError, Response
 
 from jupyter_integrations_utility.batchquery import df_expand_col
 # Your Specific integration imports go here, make sure they are in requirements!
@@ -26,6 +26,7 @@ import ipywidgets as widgets
 from elliptic_core._version import __desc__
 
 import random
+import requests
 from time import strftime, localtime, sleep
 import jmespath
 from io import BytesIO
@@ -61,8 +62,6 @@ class Elliptic(Integration):
     myopts['elliptic_redirect_wait'] = [5, "Seconds to wait on HTTP30X redirect"]
     myopts['elliptic_resultready_wait_time']=[6, "Seconds between submission and result polling"]
     myopts['elliptic_resultready_wait_attempts']=[6, "How many times to poll results before giving up."]
-    myopts['elliptic_ssdisplay_height'] = [1200, "how many pixels wide for displaying an image"]
-    myopts['elliptic_ssdisplay_width'] = [850, "how many pixels wide for screenshots for displaying an image"]
     myopts['elliptic_submission_privacy'] = ["private", "Default visiblity for submissions to URLScan."]
     myopts['elliptic_submission_country'] = ["US","The country from which the scan should be performed"]
     myopts['elliptic_submission_referer'] = [None, "Override the HTTP referer for this scan"]
@@ -75,27 +74,6 @@ class Elliptic(Integration):
     Key:Value pairs here for APIs represent the type? 
     """
 
-
-    """
-    Syntax is 
-    {'command':{'url':'the service url', 'path':'path_for_service',
-    'method':'POST', 'parsers':[(pandas_column_name,
-    jmespath_parse_expression)]}
-        {
-            "scan": {'url':base_url,'path': "/scan/", 'method':'POST','parsers':[]},
-            "result": {
-                'url':base_url,
-                'path':"/result/",
-                'method':'GET',
-                ## column_name & column_value as jmespath valid string
-                'parsers':[
-                    ("cookies","data.cookies[*].[domain,name,value]"),
-                ]
-            }
-        }
-    """
-
-
     # Class Init function - Obtain a reference to the get_ipython()
     def __init__(self, shell, debug=False, *args, **kwargs):
         super(Elliptic, self).__init__(shell, debug=debug)
@@ -107,8 +85,6 @@ class Elliptic(Integration):
         self.load_env(self.custom_evars)
         self.parse_instances()
 #######################################
-
-
 
     def retCustomDesc(self):
         return __desc__
@@ -172,6 +148,13 @@ class Elliptic(Integration):
             inst['session']=API(key=inst['user'], secret=mypass,host=inst['host'], port=inst['port'], scheme=inst['scheme'], debug=self.debug, verify=ssl_verify,proxies=myproxies)
             result = 0
         return result
+    
+    def response_decodes(self, response : Response):
+        try:        
+            response.json()
+        except JSONDecodeError as json_e:
+            return False
+        return True
 
     def parse_query(self, query):
         q_items = query.split("\n")
@@ -253,59 +236,7 @@ class Elliptic(Integration):
                 if response.ok: break
                 sleep(wait)
             final_response=last_response
-        return self.response_decodes(final_response), final_response.ok, final_response.status_code, final_response.text, final_response.content 
-
-    def execute_batch_request(self, instance : str, ep : str, data : str, endpoint_doc : dict , polling : bool = False):
-        """
-        Parameters
-        ----------
-        instance - str - represents the instance in self.instances[{instance}]
-        ep - str - represents the endpoint/command passed by the user
-        data - list - a list of data provided in the %magics cell by the user
-        polling - bool - (default False) if True, tells execute_request to poll
-        the API for results after submissions
-        
-        Output
-        ------
-        results : list - a list of dictionary objects representing requests.Response objects.
-        """
-
-        results = []
-
-        self.ipy.user_ns[f'prev_{self.name_str}_{instance}_dict']={}
-        self.ipy.user_ns[f'prev_{self.name_str}_{instance}_raw']=[]
-        
-        for post_data in data:
-            sleep(self.opts['elliptic_batchsubmit_wait_time'][0])
-            if self.debug:
-                print(f"Batch processing, running: {post_data}")
-
-            canDecode, status, status_code, response_text,content = self.execute_request(instance,ep,post_data,endpoint_doc,polling=polling)
-            if not status: #filter out anything that isn't a valid 200 response with parsable data from the API
-                #at least prompt the user
-                print(f'Failure to retrieve sample: {post_data} - Status Code: {str(status_code)}')
-                print(f"{response_text[:self.opts['elliptic_batchsubmit_error_concat'][0]]}...")
-                print('Skipping...')
-                continue
-            else:
-                #These responses should be parsed, and added routed back to the user in an appropriate means
-                try:
-                    sample = self.defang_url(post_data)
-                    if canDecode:
-                        sample_data = json.loads(response_text)
-                        self.ipy.user_ns[f'prev_{self.name_str}_{instance}_dict'].update({sample:sample_data})
-                        sample_data.update({'sample':sample})
-                        results.append(sample_data)
-                    else:
-                        self.ipy.user_ns[f'prev_{self.name_str}_{instance}_dict'].update({sample:response_text})
-                        results.append({'sample':sample,'_raw':content})
-                except Exception as e:
-                    print(f"Error occured while parsing Response to 'dict' {str(e)}")
-                    self.ipy.user_ns[f'prev_{self.name_str}_{instance}_dict'].update({self.defang_url(post_data):None})
-                    pass
-                self.ipy.user_ns[f'prev_{self.name_str}_{instance}_raw'].append({self.defang_url(post_data):content})
-            
-        return results
+        return self.response_decodes(final_response), final_response.ok, final_response.status_code, final_response.text, final_response.content
 
     def validateQuery(self, query, instance):
         bRun = True
@@ -321,8 +252,8 @@ class Elliptic(Integration):
         inst = self.instances[instance]
         ep, ep_vars, eps = self.parse_query(query)
 
-        if ep not in self.apis.keys():
-            print(f"Endpoint: {ep} not in available APIs: {self.apis.keys()}")
+        if ep not in self.API_CALLS:
+            print(f"Endpoint: {ep} not in available API endpoints: [{self.API_CALLS}]")
             bRun = False
             if bReRun:
                 print("Submitting due to rerun")
@@ -357,7 +288,7 @@ class Elliptic(Integration):
             self.call_help(ep_data)
             return mydf, "Success - No Results"
         
-        if "-b" in eps or len(ep_data)>1:
+        if "-b" in eps or (len(ep_data)>1):
             print("Batch processing enabled")
             batch=True
         
@@ -366,11 +297,33 @@ class Elliptic(Integration):
             polling=True
 
         try:
+            set_trace()
             endpoint_doc = json.loads(getattr(API,ep).__doc__)
-            if batch:
-                results = self.execute_batch_request(instance, ep, ep_data, endpoint_doc, polling=polling)
+            if batch and ep in ['submit_wallet','submit_transaction']:
+                canDecode, ok, status_code, response_text, response_content = self.execute_request(instance, ep, ep_data, endpoint_doc, polling=polling)
+            elif batch and ep in ['get_wallet','get_transaction']:
+                temp=[]
+                for line in ep_data:
+                    canDecode, ok, status_code, response_text, response_content = self.execute_request(instance, ep, line, endpoint_doc, polling=polling)
+                    if canDecode and ok:
+                        temp.append(json.loads(response_text))
+                mydf = pd.DataFrame(temp)
+                str_err = "Success - Results"
+                return mydf, str_err
             else:
                 canDecode, ok, status_code, response_text, response_content = self.execute_request(instance, ep, ep_data[0], endpoint_doc, polling=polling)
+            if ok and canDecode:
+                if ep=='get_transaction' or ep=='get_wallet':
+                    mydf = pd.DataFrame([json.loads(response_text)])
+                else:
+                    mydf = pd.DataFrame(json.loads(response_text))
+                    str_err = "Success - Results"
+            elif canDecode:
+                mydf = pd.DataFrame(json.loads(response_text))
+                str_err = f"Success - Status Code{status_code}"
+            else:
+                str_err = f"Error - {status_code}: {response_text[:['elliptic_nodecode_error'][0]]}"
+                mydf=None
 
         except Exception as e:
             print(f"Error - {str(e)}")
