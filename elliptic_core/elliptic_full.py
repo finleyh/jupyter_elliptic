@@ -297,7 +297,6 @@ class Elliptic(Integration):
             polling=True
 
         try:
-            set_trace()
             endpoint_doc = json.loads(getattr(API,ep).__doc__)
             if batch and ep in ['submit_wallet','submit_transaction']:
                 canDecode, ok, status_code, response_text, response_content = self.execute_request(instance, ep, ep_data, endpoint_doc, polling=polling)
