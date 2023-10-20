@@ -28,7 +28,7 @@ class API(object):
         pattern = re.compile(expression)
         return pattern.search(data)
     
-    def submit_transaction(self, data : str , blockchain : str = 'holistic', asset : str = 'asset'):
+    def submit_transaction(self, data : str , blockchain : str = 'holistic', asset : str = 'holistic'):
         """{"switches":["-p"], "polling_endpoint":"get_transaction", "polling_data":"id"}"""
         try:
             transaction_hashes = self.__parse_input('\n'.join(data), r'tx_hashes=(?P<hash>.*?)\n').group('hash').split(',')
